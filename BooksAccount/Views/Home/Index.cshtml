@@ -1,0 +1,211 @@
+﻿@model BooksAccount.Models.Book
+
+@{
+    ViewBag.Title = "Index";
+    Layout = null;
+}
+<!doctype html>
+<html>
+<head>
+    <meta name="viewport" charset="utf-8" content="width=device-width"/>
+    <link href="~/Content/Site.css" rel="stylesheet" />
+    <link href="~/Content/bootstrap.css" rel="stylesheet" />
+
+    <script src="~/Scripts/jquery-3.2.1.js"></script>
+    <script src="~/Scripts/jquery.validate.js"></script>
+    <script src="~/Scripts/jquery.validate.unobtrusive.js"></script>
+    <script src="~/Scripts/jquery.unobtrusive-ajax.js"></script>
+    <title>Index</title>
+</head>
+<body>
+    <h3 id="greating">Index</h3>
+    <div id="mainList">
+        <table id="books" class="table-responsive table-bordered container">
+            <caption>book table</caption>
+            <thead>
+                <tr class="row">
+                    <td class="col-md-1">book_id</td>
+                    <td class="col-md-3">authors_names</td>
+                    <td class="col-md-3">book_name</td>
+                    <td class="col-md-2">ISBN</td>
+                    <td class="col-md-1">book_cost</td>
+                    <td class="col-md-1">genre</td>
+                    <td class="col-md-1">DELETE IT</td>
+                </tr>
+            </thead>
+            <tbody>
+
+            </tbody>
+            </table>
+        <div id="links">
+
+        </div>
+        <p>Cause a form to add a book 
+        <input type="button" value="Cause" id="causeForm" />
+        </p>
+        
+    </div>
+    
+    <div id="formToSubmit" style="display:none">
+    <h4> You should fill the form to add a new book to the list </h4>
+        @{Html.EnableClientValidation();}
+        @{Html.EnableUnobtrusiveJavaScript();}
+        @using (Ajax.BeginForm(actionName: "",routeValues: "", 
+            htmlAttributes: new { @class = "form-horizontal", role = "form" },
+            ajaxOptions: new AjaxOptions
+            {
+                HttpMethod = "Post",
+                Url = "/api/Crud",
+                InsertionMode = InsertionMode.Replace
+            }))
+        {
+            <div class="form-group">
+                <label class="col-md-2" for="authors_names" > authors: </label>
+                <div class="col-md-10">
+                    <input id ="authors_names"
+                    class="form-control" type="text" name="authors_names" />
+                </div>
+                @Html.ValidationMessageFor(model => model.authors_names)
+            </div>
+            <div class="form-group">
+                <label class="col-md-2"> name:</label>
+                <div class="col-md-10">
+                    <input class="form-control" type="text" name="book_name" />
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="col-md-2"> ISBN:</label>                
+                <div class="col-md-10">
+                    <input type="text" name="ISBN" class="form-control" /></div>
+                </div>
+            <div class="form-group">
+                <label class="col-md-2"> cost:</label>
+                <div class="col-md-10">
+                    <input type="text" name="book_cost" class="form-control" />
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="col-md-2"> genre: </label>
+                <div class="col-md-10">
+                    <input type="text" name="genre" class="form-control" />
+                </div>
+            </div>
+            <div id="form_submit">
+                <input type="submit" value="submit" />
+                <input type="button" value="close form" id="btn_cls_form" />
+            </div>
+        }
+    </div>
+</body>
+
+</html>
+<script type="text/javascript">
+    var ItemsOnPage = 5;
+    $(document).ready(function ()
+    {
+       // alert("page is reloading");
+        var num = getPagesInfo();
+        createLinks(num);
+        getItemsInPage(1);
+        $('input#causeForm').on('click', function ()
+        {
+            $('div#formToSubmit').css("display","block");
+        });
+        $('input#btn_cls_form').on('click', function ()
+        {
+            $('div#formToSubmit').css("display", "none");
+        });
+    });
+    
+    function btn_del_handlers(Elem)
+    {
+        Elem.on('click', function ()
+        {
+            var row_id_to_del = Elem.attr('id');
+            console.log(row_id_to_del);
+            
+            $.ajax({
+                method: "Delete",
+                url: "/api/Crud/"+row_id_to_del+"/delete",
+                contentType: 'application/json',
+                data: row_id_to_del
+            });
+            return false;
+        });
+    }
+    function link_pages_handlers(Elem)
+    {
+        Elem.on('click', function ()
+        {
+            getItemsInPage(Elem.attr('id'));
+            return false;
+        });
+    }
+    function getPagesInfo()
+    {
+        var count;
+        $.get({
+            method: "Get",
+            async : false,
+            url: "/api/Crud/pagesInfo",
+            dataType : "json",
+            success: function (data)
+            {
+                count = data;
+            },
+            error: function ()
+            {
+                console.log("ERROR");
+            }
+        });
+        console.log("count: " + count);
+        return count;
+    }
+    function getItemsInPage(page)
+    {
+        $.ajax({
+            url: "/api/Crud/"+ page +'/' + ItemsOnPage,
+            method: "Get",
+            dataType: "Json",
+            success: function (data) {
+                var row_id;
+                var table = $('div#mainList table#books');
+                var classes = ["col-md-1", "col-md-3", "col-md-3",
+                    "col-md-2", "col-md-1", "col-md-1", "col-md-1"];
+                
+                table.find('.changed_row').remove();
+                
+                $.each(data, function (index, value) {
+                    if (data != null) {
+                        row_id = value.book_id;
+                        $("<tr class="+'"'+"changed_row row"+'"' + "id=" + row_id + "></tr>")
+                            .appendTo(table);
+
+                        var i = 0;
+                        $.each(value, function (key, val) {
+                            $("<td class=" + classes[i] 
+                                +"><span>" + val + "</span></td>")
+                            .appendTo(table.find('tr#'+row_id));
+                            i++;
+                        });
+                        btn_del_handlers($("<td><a href=''; class='col-md-1'; id="
+                            + row_id + ">delete</a></td>")
+                        .appendTo(table.find('tr#'+row_id)));
+                    }
+                });
+
+            }
+        });
+    }
+    function createLinks(quantity)
+    {
+        var num = Math.round((quantity / ItemsOnPage) + 0.5);
+        var str = "href=" + '"' + '"' + ';';
+        console.log('links' + num);
+        for (var i = 0; i < num ; i++)
+        {
+            link_pages_handlers($("<a id="+(i+1)+' '+str+">"+(i+1)+"</a>")
+            .appendTo('div#mainList div#links'));
+        }
+    }
+</script>
